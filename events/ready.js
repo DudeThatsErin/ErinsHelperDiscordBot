@@ -1,4 +1,5 @@
 const { REST } = require('discord.js');
+require('dotenv').config();
 
 module.exports = {
     name: 'ready',
@@ -23,6 +24,6 @@ module.exports = {
         console.log('             Error Logs...           ')
         console.log('|-----------------------------------|')
 
-        client.user.setPresence({ activities: [{ name: 'Use ++ or / prefix' }] });
+        client.user.setPresence({ activities: [{ name: `Use ${process.env.PREFIX} or / prefix` }] });
     }
 }
