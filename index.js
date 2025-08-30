@@ -1,6 +1,6 @@
 /*
   ErinHelperDiscordBot
-  USING DISCORD.JS V14.6.0+
+  USING DISCORD.JS V14.6.0
 */
 require('dotenv').config();
 const fs = require('fs');
