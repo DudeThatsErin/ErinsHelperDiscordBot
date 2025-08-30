@@ -1,27 +1,49 @@
-# OneNoteBot
+# ErinHelperDiscordBot
 
-A Discord bot for OneNote integration and server management with comprehensive moderation commands.
+A comprehensive Discord bot designed for coding help communities, featuring automated support responses, fun commands, and server administration tools.
 
 ## Features
 
-- **General Commands**: Ping, help, user info, server info
-- **Moderation Commands**: Clear messages, kick, ban, mute, unmute users
-- **Role-based Permissions**: Moderation commands require specific role permissions
+- **Help & Support Commands**: Automated responses for common coding questions and community guidelines
+- **Fun & Entertainment**: Interactive games, jokes, trivia, and entertainment commands
+- **Admin & Moderation**: Server management tools for administrators and moderators
+- **Community Guidelines**: Built-in responses to promote good question-asking practices
+- **Database Integration**: SQLite database for persistent data storage
 
 ## Commands
 
-### General Commands
-- `/ping` - Check if the bot is responsive
-- `/help` - Display all available commands with descriptions
-- `/userinfo [user]` - Get detailed information about a user (defaults to command user)
-- `/serverinfo` - Get comprehensive server information
+### Help & Support Commands
+- `/justask <user>` - Reminds users to ask their question directly instead of asking if anyone can help
+- `/share-code [user]` - Provides guidance on properly formatting and sharing code
+- `/format [user]` - Explains proper code formatting with backticks
+- `/error [user]` - Guides users on how to properly share error messages
+- `/elaborate [user]` - Encourages users to provide more details about their problem
+- `/patience [user]` - Reminds users to be patient while waiting for help
+- `/gettinganswers [user]` - Tips for getting better responses to coding questions
+- `/rules [user]` - Links to server rules and community guidelines
+- `/faq` - Frequently asked questions about coding and the server
 
-### Moderation Commands (Requires Mod Role)
-- `/clear <amount>` - Clear 1-100 messages from the current channel
-- `/kick <user> [reason]` - Kick a user from the server with optional reason
-- `/ban <user> [reason]` - Ban a user from the server with optional reason
-- `/mute <user> [duration]` - Mute a user for specified minutes (default: 10 minutes)
-- `/unmute <user>` - Remove timeout from a muted user
+### Fun & Entertainment Commands
+- `/8ball <question>` - Ask the magic 8-ball a question
+- `/joke` - Get a random programming joke
+- `/fact` - Random interesting fact
+- `/trivia` - Programming trivia questions
+- `/dice [sides]` - Roll dice (default 6-sided)
+- `/flip` - Flip a coin
+- `/choose <options>` - Choose between multiple options
+- `/rps <choice>` - Play rock, paper, scissors
+- `/compliment [user]` - Give someone a compliment
+- `/roast [user]` - Playfully roast someone
+- `/meme` - Get a random programming meme
+- `/riddle` - Get a programming riddle
+- `/quote` - Inspirational programming quote
+
+### Admin Commands (Requires Admin Role)
+- `/access <user>` - Manage user access permissions
+- `/boosters` - Manage server booster benefits
+- `/welcome` - Configure welcome messages
+- `/server-rules` - Manage server rules display
+- `/clear-suggs` - Clear suggestion channels
 
 ## Setup
 
@@ -36,19 +58,16 @@ A Discord bot for OneNote integration and server management with comprehensive m
    DISCORD_TOKEN=your_bot_token
    CLIENT_ID=your_client_id
    APP_ID=your_app_id
-   PUBLIC_SERVER_ID=your_public_server_id
-   PRIVATE_SERVER_ID=your_private_server_id
-   MOD_ROLE_ID=your_moderator_role_id
    ```
 
 3. **Run the Bot**
    ```bash
-   npm start
+   node index.js
    ```
 
-   For development with auto-restart:
+   For production with PM2:
    ```bash
-   npm run dev
+   pm2 start ecosystem.config.js
    ```
 
 ## Bot Permissions
@@ -56,26 +75,35 @@ A Discord bot for OneNote integration and server management with comprehensive m
 The bot requires the following Discord permissions:
 - Send Messages
 - Use Slash Commands
-- Manage Messages (for clear command)
-- Kick Members
-- Ban Members
-- Moderate Members (for mute/unmute)
+- Send Messages in Threads
+- Create Public Threads
+- Send Direct Messages
 - Read Message History
 - View Channels
+- Use External Emojis
+- Add Reactions
 
-## Server Configuration
+## Features & Usage
 
-- **Public Server**: Commands available to all users (general commands only)
-- **Private Server**: Full command access for authorized users
-- **Mod Role**: Required for moderation commands (kick, ban, mute, clear)
+### Community Helper Features
+- **Automated Support**: Provides consistent, helpful responses to common questions
+- **Question Quality**: Encourages users to ask better questions with proper formatting
+- **Code Sharing**: Guides users on proper code formatting and sharing practices
+- **Community Standards**: Reinforces server rules and etiquette automatically
+
+### Entertainment & Engagement
+- **Interactive Games**: Keep community members engaged with fun activities
+- **Programming Humor**: Jokes, memes, and quotes relevant to developers
+- **Trivia & Learning**: Educational content to help users learn while having fun
 
 ## Development
 
-The bot uses Discord.js v14 and supports:
-- Slash commands with proper error handling
-- Role-based permission checking
-- Multi-server deployment
-- Automatic command registration
+The bot uses Discord.js v14.21.0 and features:
+- Modular command structure with separate folders for different command types
+- SQLite database integration for persistent data storage
+- Automatic command loading and registration
+- Event-driven architecture with proper error handling
+- Rate limiting protection and ghost ping detection
 
 ## License
 
