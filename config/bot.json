@@ -2,12 +2,24 @@
   "tag": "Erin's Helper Bot#1301",
 	"name": "Erin's Helper Bot",
 	"id": "791803587432677427",
-	"server": "https://discord.gg/zgkMsNcBPT",
+	"image": "https://cdn.discordapp.com/avatars/791803587432677427/a60bcd28ec4d668b1728432cdd99559a.png?size=4096",
 	"avatar": "https://cdn.discordapp.com/avatars/791803587432677427/a60bcd28ec4d668b1728432cdd99559a.png?size=4096",
 	"uptime": "https://stats.uptimerobot.com/0pj23Sk01K",
-	"inviteLink": "https://discord.com/oauth2/authorize?client_id=791803587432677427&permissions=8&integration_type=0&scope=bot+applications.commands",
+	"inviteLink": "https://discord.gg/zgkMsNcBPT",
+	"botInviteLink": "https://discord.com/oauth2/authorize?client_id=791803587432677427&permissions=8&integration_type=0&scope=bot+applications.commands",
 	"ownerID": "455926927371534346",
-	"serverId": "718253204147798047",
-	"suggestionsId": "1406095003666612254",
-	"announcementsId": "1406098738178691224"
+	"defaultCooldown": 5,
+	"servers": {
+		"mine": {
+			"id": "718253204147798047",
+			"suggestionsChannelId": "1406095003666612254",
+			"announcementsChannelId": "1406098738178691224",
+			"botSpamChannelId": "1406106241255866418",
+			"modBotSpamChannelId": "1406112392651210802",
+			"modRoles": ["718253309101867008"],
+			"modIDs": ["455926927371534346"],
+			"generalCategoryID": "989909861003325460",
+			"welcomeChannelId": "1406089587553468436"
+		}
+	}
 }

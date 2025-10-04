@@ -1,5 +1,5 @@
 const { REST } = require('discord.js');
-require('dotenv').config();
+const config = require('../config/config.json');
 
 module.exports = {
     name: 'ready',
@@ -24,6 +24,6 @@ module.exports = {
         console.log('             Error Logs...           ')
         console.log('|-----------------------------------|')
 
-        client.user.setPresence({ activities: [{ name: `Use ${process.env.PREFIX} or / prefix` }] });
+        client.user.setPresence({ activities: [{ name: `Use ${config.PREFIX} or / prefix` }] });
     }
 }

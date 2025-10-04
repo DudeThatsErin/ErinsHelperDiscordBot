@@ -5,7 +5,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const { Client, GatewayIntentBits, Partials, Collection, REST } = require('discord.js');
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages ], partials: [Partials.Channel] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.GuildMembers ], partials: [Partials.Channel, Partials.Message, Partials.Reaction] });
 
 // Create a shared REST instance for the entire bot
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
