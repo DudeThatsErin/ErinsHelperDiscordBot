@@ -6,6 +6,26 @@ module.exports = {
     async execute(interaction, client) {
         if (interaction.isMessageComponent()) return;
 
+        // Handle modal submits
+        if (interaction.isModalSubmit()) {
+            const commandName = interaction.customId.split(':')[0];
+            const command = client.slashCommands.get(commandName) || client.erinCommands.get(commandName);
+            if (!command || typeof command.handleModal !== 'function') {
+                return interaction.reply({ content: 'This form no longer exists.', ephemeral: true });
+            }
+            if (command.ownerOnly === 1 && interaction.user.id != o.id) {
+                return interaction.reply({ content: `This is only a command Erin can use.`, ephemeral: true });
+            }
+            try {
+                return await command.handleModal(interaction);
+            } catch (error) {
+                console.error('Modal handler error:', error);
+                if (!interaction.replied && !interaction.deferred) {
+                    return interaction.reply({ content: '❌ Something went wrong handling that form.', ephemeral: true });
+                }
+            }
+        }
+
         const command = client.slashCommands.get(interaction.commandName) || client.erinCommands.get(interaction.commandName);
         if (!command) return interaction.reply({ content: 'This command no longer exists.', ephemeral: true });
 
@@ -19,7 +39,7 @@ module.exports = {
         //mod only
         const modRoles = ['780941276602302523', '822500305353703434', '718253309101867008', '751526654781685912'];
         let value = 0;
-        if (command.modOnly === 1) {
+        if (command.modOnly === 1 && interaction.member) {
             for (const ID of modRoles) {
                 if (!interaction.member.roles.cache.has(ID)) {
                     value++
@@ -33,7 +53,7 @@ module.exports = {
 
         // botspam channel only
         const botspam = `433962402292432896`;
-        if (command.botSpamOnly === 1) {
+        if (command.botSpamOnly === 1 && interaction.guild) {
             if (interaction.channel.id != botspam) {
                 return interaction.reply({ content: `Please only use this command in the <#${botspam}> channel. This command cannot be used elsewhere. Thank you.`, ephemeral: true })
             }
@@ -62,10 +82,9 @@ module.exports = {
         // actually running the commands.
         try {
             //await interaction.deferReply();
-            if(`718253204147798047` === interaction.guild.id) {
-                await command.execute(interaction, client);
-            }
-            if(`359760149683896320` === interaction.guild.id) {
+            const guildId = interaction.guild?.id;
+            const isDM = !interaction.guild;
+            if (isDM || guildId === `718253204147798047` || guildId === `359760149683896320`) {
                 await command.execute(interaction, client);
             }
         } catch (error) {
