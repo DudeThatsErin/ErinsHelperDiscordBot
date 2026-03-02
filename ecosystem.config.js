@@ -2,7 +2,7 @@ module.exports = {
   apps: [{
     name: 'discord-bot',
     script: 'index.js',
-    cwd: '/var/www/QuartzNotesBot',
+    cwd: '/var/www/ErinHelperDiscordBot',
     instances: 1,
     autorestart: true,
     watch: false,

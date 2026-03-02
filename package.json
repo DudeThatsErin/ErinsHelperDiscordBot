@@ -1,11 +1,11 @@
 {
   "dependencies": {
     "@psibean/discord.js-pagination": "^4.0.5",
-    "discord.js": "^14.21.0",
+    "discord.js": "^14.24.0",
     "discord.js-ghost-ping": "^2.1.4",
     "dotenv": "^17.2.1",
     "moment": "^2.29.4",
-    "pm2": "^5.2.0",
+    "pm2": "^6.0.13",
     "sqlite3": "^5.1.7"
   }
 }
