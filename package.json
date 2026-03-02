@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@psibean/discord.js-pagination": "^4.0.5",
+    "axios": "^1.13.6",
     "discord.js": "^14.24.0",
     "discord.js-ghost-ping": "^2.1.4",
     "dotenv": "^17.2.1",

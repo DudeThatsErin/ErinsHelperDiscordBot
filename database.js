@@ -87,6 +87,22 @@ const db = new sqlite3.Database(dbPath, (err) => {
             if (err) console.error('Error creating task_images table:', err.message);
             else console.log('Task images table ready');
         });
+
+        // Initialize ms_tokens table for Microsoft OAuth
+        db.run(`
+            CREATE TABLE IF NOT EXISTS ms_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL UNIQUE,
+                access_token TEXT NOT NULL,
+                refresh_token TEXT NOT NULL,
+                expires_at INTEGER NOT NULL,
+                onenote_section_id TEXT,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating ms_tokens table:', err.message);
+            else console.log('MS tokens table ready');
+        });
     }
 });
 

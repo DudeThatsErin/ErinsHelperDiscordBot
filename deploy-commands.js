@@ -10,7 +10,7 @@ function readFilesFromPath(pathString) {
     if (!fs.existsSync(pathString)) return [];
     const directoryEntries = fs.readdirSync(pathString, { withFileTypes: true });
     return directoryEntries.reduce((filteredEntries, dirEnt) => {
-        if (dirEnt.isDirectory()) {
+        if (dirEnt.isDirectory() && !dirEnt.name.startsWith('_')) {
             filteredEntries.push(...readFilesFromPath(`${pathString}/${dirEnt.name}`));
         } else if (dirEnt.isFile() && dirEnt.name.endsWith('.js')) {
             filteredEntries.push(`${pathString}/${dirEnt.name}`);
