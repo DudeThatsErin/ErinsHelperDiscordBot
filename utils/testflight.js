@@ -30,13 +30,6 @@ function isFull(html) {
     return html.includes('This beta is full.') || html.includes("This beta isn't accepting any new testers right now.");
 }
 
-function getName(html) {
-    if (html.includes('<title>Join the ')) {
-        return html.split('<title>Join the ')[1].split(' - TestFlight - Apple</title>')[0];
-    }
-    return 'App';
-}
-
 function buildEmbed(programs, lastChecked) {
     const embed = new EmbedBuilder()
         .setTitle('TestFlight Watcher')
@@ -71,7 +64,7 @@ async function runChecks(programs, channel, pingUserId) {
             const becameAvailable = available && prev && !prev.available && !prev.error;
             statusCache[program.id] = { available, error: false };
             if (becameAvailable && pingUserId && channel) {
-                await channel.send(`<@${pingUserId}>`).catch(err =>
+                await channel.send(`<@${pingUserId}> ${program.name || program.id} is now available!`).catch(err =>
                     console.warn(`[TestFlight] Failed to send ping: ${err.message}`)
                 );
             }
