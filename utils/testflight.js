@@ -70,7 +70,6 @@ async function runChecks(programs, channel, pingUserId) {
             const prev = statusCache[program.id];
             const becameAvailable = available && prev && !prev.available && !prev.error;
             statusCache[program.id] = { available, error: false };
-            console.log(`[TestFlight] ${program.name || program.id}: ${available ? 'AVAILABLE' : 'full'}`);
             if (becameAvailable && pingUserId && channel) {
                 await channel.send(`<@${pingUserId}>`).catch(err =>
                     console.warn(`[TestFlight] Failed to send ping: ${err.message}`)
