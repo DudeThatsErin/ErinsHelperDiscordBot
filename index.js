@@ -103,6 +103,12 @@ for (const file of eventFiles) {
   console.log(event.name + ' loaded successfully!');
 }
 
+// TestFlight watcher
+const { startTestFlightWatcher } = require('./utils/testflight');
+client.once('ready', () => {
+  startTestFlightWatcher(client);
+});
+
 // Start the bot (commands are deployed via createcommands prefix command)
 (async () => {
   await require('./database.js');
