@@ -2,6 +2,7 @@
 node_js
 token.json
 config.json
+config/settings.json
 owner.json
 database.json
 

@@ -80,7 +80,7 @@ function formatTimestamp() {
 }
 
 async function startTestFlightWatcher(client) {
-    const jsonConfig = require('../config.json');
+    const jsonConfig = require('../config/settings.json');
     const programs = jsonConfig.testflight?.programs;
     const channelId = jsonConfig.channels?.testflight;
     const pingUserId = jsonConfig.testflight?.pingUserId;
