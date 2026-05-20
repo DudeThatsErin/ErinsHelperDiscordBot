@@ -18,7 +18,7 @@ module.exports = {
     async execute(interaction) {
         const taskId = interaction.options.getInteger('task');
         const task = await tasks.getTask(taskId);
-        if (!task) return interaction.reply({ content: `❌ No task found with ID \`#${taskId}\`.`, ephemeral: true });
+        if (!task) return interaction.reply({ content: `❌ No task found with ID \`#${taskId}\`.`, flags: 64 });
 
         const [subtaskList, imageList] = await Promise.all([
             tasks.getSubtasks(taskId),

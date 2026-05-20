@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, LabelBuilder } = require('discord.js');
 const { createPage, buildHtmlContent } = require('../../utils/onenote.js');
 
 module.exports = {
@@ -19,37 +19,43 @@ module.exports = {
             .setCustomId(`onenote:${attachment ? encodeURIComponent(attachment.url) : ''}`)
             .setTitle('Send to OneNote');
 
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder({ label: 'Page Title' })
-                    .setCustomId('title')
-                    .setStyle(TextInputStyle.Short)
-                    .setMaxLength(255)
-                    .setPlaceholder('My note title')
-                    .setRequired(true)
-            ),
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder({ label: 'Content' })
-                    .setCustomId('content')
-                    .setStyle(TextInputStyle.Paragraph)
-                    .setMaxLength(3000)
-                    .setPlaceholder('Write text, paste links, or leave blank if only attaching an image')
-                    .setRequired(false)
-            ),
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder({ label: 'Extra URLs (one per line)' })
-                    .setCustomId('urls')
-                    .setStyle(TextInputStyle.Paragraph)
-                    .setMaxLength(2000)
-                    .setPlaceholder('https://...\nhttps://... (optional)')
-                    .setRequired(false)
-            )
+        modal.addLabelComponents(
+            new LabelBuilder()
+                .setLabel('Page Title')
+                .setTextInputComponent(
+                    new TextInputBuilder()
+                        .setCustomId('title')
+                        .setStyle(TextInputStyle.Short)
+                        .setMaxLength(255)
+                        .setPlaceholder('My note title')
+                        .setRequired(true)
+                ),
+            new LabelBuilder()
+                .setLabel('Content')
+                .setTextInputComponent(
+                    new TextInputBuilder()
+                        .setCustomId('content')
+                        .setStyle(TextInputStyle.Paragraph)
+                        .setMaxLength(3000)
+                        .setPlaceholder('Write text, paste links, or leave blank if only attaching an image')
+                        .setRequired(false)
+                ),
+            new LabelBuilder()
+                .setLabel('Extra URLs (one per line)')
+                .setTextInputComponent(
+                    new TextInputBuilder()
+                        .setCustomId('urls')
+                        .setStyle(TextInputStyle.Paragraph)
+                        .setMaxLength(2000)
+                        .setPlaceholder('https://...\nhttps://... (optional)')
+                        .setRequired(false)
+                )
         );
 
         return interaction.showModal(modal);
     },
     async handleModal(interaction) {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: 64 });
 
         const [, encodedAttachmentUrl] = interaction.customId.split(':');
         const attachmentUrl = encodedAttachmentUrl ? decodeURIComponent(encodedAttachmentUrl) : null;
@@ -74,6 +80,11 @@ module.exports = {
             return interaction.editReply({ content: lines.join('\n') });
         } catch (err) {
             console.error('onenote handleModal error:', err.response?.data || err.message);
+            if (err.response?.data?.error?.code === '20102') {
+                const { saveSectionId } = require('../../utils/onenote.js');
+                await saveSectionId(interaction.user.id, null);
+                return interaction.editReply({ content: `❌ Your configured OneNote section no longer exists. Please run \`/onenote-setup\` to pick a new section.` });
+            }
             return interaction.editReply({ content: `❌ ${err.message}` });
         }
     }

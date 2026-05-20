@@ -16,10 +16,10 @@ module.exports = {
         const imageId = interaction.options.getInteger('image');
 
         const image = await require('../../database.js').get('SELECT * FROM task_images WHERE id = ?', [imageId]);
-        if (!image) return interaction.reply({ content: `❌ No image found with ID \`#${imageId}\`.`, ephemeral: true });
+        if (!image) return interaction.reply({ content: `❌ No image found with ID \`#${imageId}\`.`, flags: 64 });
 
         const result = await tasks.deleteImage(imageId);
-        if (!result.success) return interaction.reply({ content: `❌ Failed to delete image: ${result.error}`, ephemeral: true });
+        if (!result.success) return interaction.reply({ content: `❌ Failed to delete image: ${result.error}`, flags: 64 });
 
         return interaction.reply({ content: `🗑️ Image \`#${imageId}\` removed from task \`#${image.task_id}\`.` });
     }

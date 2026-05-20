@@ -27,11 +27,11 @@ module.exports = {
         const status = interaction.options.getString('status');
 
         const task = await tasks.getTask(taskId);
-        if (!task) return interaction.reply({ content: `❌ No task found with ID \`#${taskId}\`.`, ephemeral: true });
+        if (!task) return interaction.reply({ content: `❌ No task found with ID \`#${taskId}\`.`, flags: 64 });
 
         if (status) {
             const result = await tasks.updateTask(taskId, { status });
-            if (!result.success) return interaction.reply({ content: `❌ Failed to update status: ${result.error}`, ephemeral: true });
+            if (!result.success) return interaction.reply({ content: `❌ Failed to update status: ${result.error}`, flags: 64 });
         }
 
         const modal = new ModalBuilder()
@@ -78,7 +78,7 @@ module.exports = {
         if (description !== null) fields.description = description;
 
         const result = await tasks.updateTask(parseInt(taskId), fields);
-        if (!result.success) return interaction.reply({ content: `❌ Failed to update task: ${result.error}`, ephemeral: true });
+        if (!result.success) return interaction.reply({ content: `❌ Failed to update task: ${result.error}`, flags: 64 });
 
         if (imageInput) {
             await tasks.addImage(parseInt(taskId), imageInput, null);

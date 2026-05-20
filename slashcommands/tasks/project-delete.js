@@ -16,10 +16,10 @@ module.exports = {
         const projectInput = interaction.options.getString('project');
         const identifier = isNaN(projectInput) ? projectInput : parseInt(projectInput);
         const project = await tasks.getProject(identifier);
-        if (!project) return interaction.reply({ content: `❌ No project found matching \`${projectInput}\`.`, ephemeral: true });
+        if (!project) return interaction.reply({ content: `❌ No project found matching \`${projectInput}\`.`, flags: 64 });
 
         const result = await tasks.deleteProject(project.id);
-        if (!result.success) return interaction.reply({ content: `❌ Failed to delete project: ${result.error}`, ephemeral: true });
+        if (!result.success) return interaction.reply({ content: `❌ Failed to delete project: ${result.error}`, flags: 64 });
 
         return interaction.reply({ content: `🗑️ Project **${project.name}** (and all its tasks) deleted.` });
     }

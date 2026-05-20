@@ -15,7 +15,7 @@ module.exports = {
     async execute(interaction) {
         const name = interaction.options.getString('name');
         const result = await tasks.addProject(name);
-        if (!result.success) return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
+        if (!result.success) return interaction.reply({ content: `❌ ${result.error}`, flags: 64 });
         return interaction.reply({ content: `✅ Project **${name}** created (Project #${result.id}).` });
     }
 };

@@ -6,7 +6,7 @@ module.exports = {
     aliases: ['purge', 'clear'],
     ownerOnly: true,
     async execute(message, args) {
-        if (message.author.id !== o.id) {
+        if (message.author.id !== o.id && message.author.id !== o.altID) {
             return message.reply({ content: '❌ Only Erin can use this command.' });
         }
 

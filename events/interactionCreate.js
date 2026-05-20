@@ -11,28 +11,28 @@ module.exports = {
             const commandName = interaction.customId.split(':')[0];
             const command = client.slashCommands.get(commandName) || client.erinCommands.get(commandName);
             if (!command || typeof command.handleModal !== 'function') {
-                return interaction.reply({ content: 'This form no longer exists.', ephemeral: true });
+                return interaction.reply({ content: 'This form no longer exists.', flags: 64 });
             }
-            if (command.ownerOnly === 1 && interaction.user.id != o.id) {
-                return interaction.reply({ content: `This is only a command Erin can use.`, ephemeral: true });
+            if (command.ownerOnly === 1 && interaction.user.id != o.id && interaction.user.id != o.altID) {
+                return interaction.reply({ content: `This is only a command Erin can use.`, flags: 64 });
             }
             try {
                 return await command.handleModal(interaction);
             } catch (error) {
                 console.error('Modal handler error:', error);
                 if (!interaction.replied && !interaction.deferred) {
-                    return interaction.reply({ content: '❌ Something went wrong handling that form.', ephemeral: true });
+                    return interaction.reply({ content: '❌ Something went wrong handling that form.', flags: 64 });
                 }
             }
         }
 
         const command = client.slashCommands.get(interaction.commandName) || client.erinCommands.get(interaction.commandName);
-        if (!command) return interaction.reply({ content: 'This command no longer exists.', ephemeral: true });
+        if (!command) return interaction.reply({ content: 'This command no longer exists.', flags: 64 });
 
         // owner only
         if (command.ownerOnly === 1) {
-            if (interaction.user.id != o.id) {
-                return interaction.reply({ content: `This is only a command Erin (<@${o.username}>) can use. If you are seeing this in error use the \`/report\` command.`, ephemeral: true });
+            if (interaction.user.id != o.id && interaction.user.id != o.altID) {
+                return interaction.reply({ content: `This is only a command Erin can use. If you are seeing this in error use the \`/report\` command.`, flags: 64 });
             }
         }
 
@@ -46,7 +46,7 @@ module.exports = {
                 }
 
                 if (value == modRoles.length) {
-                    return interaction.reply({ content: `This is a command only moderators can use. You do not have the required permissions. Moderators have the \`@Moderator\` role or \`@&Junior Mod\` roles. Please run \`/report [issue]\` if you are seeing this in error.`, ephemeral: true });
+                    return interaction.reply({ content: `This is a command only moderators can use. You do not have the required permissions. Moderators have the \`@Moderator\` role or \`@&Junior Mod\` roles. Please run \`/report [issue]\` if you are seeing this in error.`, flags: 64 });
                 }
             }
         }
@@ -55,7 +55,7 @@ module.exports = {
         const botspam = `433962402292432896`;
         if (command.botSpamOnly === 1 && interaction.guild) {
             if (interaction.channel.id != botspam) {
-                return interaction.reply({ content: `Please only use this command in the <#${botspam}> channel. This command cannot be used elsewhere. Thank you.`, ephemeral: true })
+                return interaction.reply({ content: `Please only use this command in the <#${botspam}> channel. This command cannot be used elsewhere. Thank you.`, flags: 64 })
             }
         }
 
@@ -72,7 +72,7 @@ module.exports = {
 
             if (now < expirationTime) {
                 const timeLeft = (expirationTime - now) / 1000;
-                return interaction.reply({ content: `Please wait ${timeLeft.toFixed(1)} more second(s) before reusing the \`${command.name}\` command.`, ephemeral: true });
+                return interaction.reply({ content: `Please wait ${timeLeft.toFixed(1)} more second(s) before reusing the \`${command.name}\` command.`, flags: 64 });
             }
         }
 

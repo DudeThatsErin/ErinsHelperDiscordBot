@@ -18,7 +18,7 @@ module.exports = {
                 .setRequired(false)
         ),
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: 64 });
 
         const notebookId = interaction.options.getString('notebook_id');
         const sectionId  = interaction.options.getString('section_id');

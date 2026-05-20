@@ -34,15 +34,15 @@ module.exports = {
         const label = interaction.options.getString('label');
 
         if (!attachment && !urlInput) {
-            return interaction.reply({ content: '❌ Provide either an uploaded file or a URL.', ephemeral: true });
+            return interaction.reply({ content: '❌ Provide either an uploaded file or a URL.', flags: 64 });
         }
 
         const task = await tasks.getTask(taskId);
-        if (!task) return interaction.reply({ content: `❌ No task found with ID \`#${taskId}\`.`, ephemeral: true });
+        if (!task) return interaction.reply({ content: `❌ No task found with ID \`#${taskId}\`.`, flags: 64 });
 
         const url = attachment ? attachment.url : urlInput;
         const result = await tasks.addImage(taskId, url, label);
-        if (!result.success) return interaction.reply({ content: `❌ Failed to add image: ${result.error}`, ephemeral: true });
+        if (!result.success) return interaction.reply({ content: `❌ Failed to add image: ${result.error}`, flags: 64 });
 
         const display = label ? `**${label}** — ${url}` : url;
         return interaction.reply({ content: `✅ Image added to task \`#${taskId}\` — **${task.title}**:\n> ${display}` });

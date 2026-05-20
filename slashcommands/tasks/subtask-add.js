@@ -16,7 +16,7 @@ module.exports = {
         const taskId = interaction.options.getInteger('task');
 
         const task = await tasks.getTask(taskId);
-        if (!task) return interaction.reply({ content: `❌ No task found with ID \`#${taskId}\`.`, ephemeral: true });
+        if (!task) return interaction.reply({ content: `❌ No task found with ID \`#${taskId}\`.`, flags: 64 });
 
         const modal = new ModalBuilder()
             .setCustomId(`subtask-add:${taskId}`)
@@ -39,10 +39,10 @@ module.exports = {
         const title = interaction.fields.getTextInputValue('title').trim();
 
         const task = await tasks.getTask(parseInt(taskId));
-        if (!task) return interaction.reply({ content: `❌ Task not found.`, ephemeral: true });
+        if (!task) return interaction.reply({ content: `❌ Task not found.`, flags: 64 });
 
         const result = await tasks.addSubtask(parseInt(taskId), title);
-        if (!result.success) return interaction.reply({ content: `❌ Failed to add subtask: ${result.error}`, ephemeral: true });
+        if (!result.success) return interaction.reply({ content: `❌ Failed to add subtask: ${result.error}`, flags: 64 });
 
         return interaction.reply({ content: `✅ Subtask \`#${result.id}\` added to task \`#${taskId}\` — **${task.title}**:\n> ${title}` });
     }

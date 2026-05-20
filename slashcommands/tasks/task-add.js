@@ -16,7 +16,7 @@ module.exports = {
         const projectInput = interaction.options.getString('project');
         const identifier = isNaN(projectInput) ? projectInput : parseInt(projectInput);
         const project = await tasks.getProject(identifier);
-        if (!project) return interaction.reply({ content: `❌ No project found matching \`${projectInput}\`. Use \`/project-add\` to create it first.`, ephemeral: true });
+        if (!project) return interaction.reply({ content: `❌ No project found matching \`${projectInput}\`. Use \`/project-add\` to create it first.`, flags: 64 });
 
         const modal = new ModalBuilder()
             .setCustomId(`task-add:${project.id}`)
@@ -57,10 +57,10 @@ module.exports = {
         const imageInput = interaction.fields.getTextInputValue('image').trim() || null;
 
         const project = await tasks.getProject(parseInt(projectId));
-        if (!project) return interaction.reply({ content: `❌ Project not found.`, ephemeral: true });
+        if (!project) return interaction.reply({ content: `❌ Project not found.`, flags: 64 });
 
         const result = await tasks.addTask(project.id, title, description);
-        if (!result.success) return interaction.reply({ content: `❌ Failed to add task: ${result.error}`, ephemeral: true });
+        if (!result.success) return interaction.reply({ content: `❌ Failed to add task: ${result.error}`, flags: 64 });
 
         if (imageInput) {
             await tasks.addImage(result.id, imageInput, null);

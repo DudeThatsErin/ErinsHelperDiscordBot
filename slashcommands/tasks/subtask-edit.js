@@ -15,7 +15,7 @@ module.exports = {
     async execute(interaction) {
         const subtaskId = interaction.options.getInteger('subtask');
         const subtask = await require('../../database.js').get('SELECT * FROM subtasks WHERE id = ?', [subtaskId]);
-        if (!subtask) return interaction.reply({ content: `❌ No subtask found with ID \`#${subtaskId}\`.`, ephemeral: true });
+        if (!subtask) return interaction.reply({ content: `❌ No subtask found with ID \`#${subtaskId}\`.`, flags: 64 });
 
         const modal = new ModalBuilder()
             .setCustomId(`subtask-edit:${subtaskId}`)
@@ -43,7 +43,7 @@ module.exports = {
             [title, parseInt(subtaskId)]
         );
 
-        if (!result.changes) return interaction.reply({ content: `❌ Subtask \`#${subtaskId}\` not found.`, ephemeral: true });
+        if (!result.changes) return interaction.reply({ content: `❌ Subtask \`#${subtaskId}\` not found.`, flags: 64 });
 
         return interaction.reply({ content: `✅ Subtask \`#${subtaskId}\` updated to:\n> ${title}` });
     }

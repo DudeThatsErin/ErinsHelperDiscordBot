@@ -11,7 +11,7 @@ module.exports = {
         const url = buildAuthUrl(interaction.user.id);
         return interaction.reply({
             content: `🔑 Click the link below to authorise Microsoft access.\nOnce you complete the login in your browser, come back and run \`/onenote-setup\` to pick your notebook section.\n\n${url}`,
-            ephemeral: true
+            flags: 64
         });
     }
 };

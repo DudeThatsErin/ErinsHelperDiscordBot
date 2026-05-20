@@ -15,10 +15,10 @@ module.exports = {
     async execute(interaction) {
         const taskId = interaction.options.getInteger('task');
         const task = await tasks.getTask(taskId);
-        if (!task) return interaction.reply({ content: `❌ No task found with ID \`#${taskId}\`.`, ephemeral: true });
+        if (!task) return interaction.reply({ content: `❌ No task found with ID \`#${taskId}\`.`, flags: 64 });
 
         const result = await tasks.deleteTask(taskId);
-        if (!result.success) return interaction.reply({ content: `❌ Failed to delete task: ${result.error}`, ephemeral: true });
+        if (!result.success) return interaction.reply({ content: `❌ Failed to delete task: ${result.error}`, flags: 64 });
 
         return interaction.reply({ content: `🗑️ Task \`#${taskId}\` — **${task.title}** — deleted (including all subtasks and images).` });
     }

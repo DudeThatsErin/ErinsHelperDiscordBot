@@ -105,7 +105,7 @@ for (const file of eventFiles) {
 
 // TestFlight watcher
 const { startTestFlightWatcher } = require('./utils/testflight');
-client.once('ready', () => {
+client.once('clientReady', () => {
   startTestFlightWatcher(client);
 });
 

@@ -1,12 +1,9 @@
 {
   "dependencies": {
-    "@psibean/discord.js-pagination": "^4.0.5",
-    "axios": "^1.13.6",
-    "discord.js": "^14.24.0",
-    "discord.js-ghost-ping": "^2.1.4",
-    "dotenv": "^17.2.1",
-    "moment": "^2.29.4",
-    "pm2": "^6.0.13",
-    "sqlite3": "^5.1.7"
+    "axios": "^1.16.1",
+    "better-sqlite3": "^12.10.0",
+    "discord.js": "^14.26.4",
+    "dotenv": "^17.4.2",
+    "pm2": "^6.0.14"
   }
 }

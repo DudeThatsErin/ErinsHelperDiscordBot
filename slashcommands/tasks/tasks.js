@@ -20,10 +20,10 @@ module.exports = {
         if (projectInput) {
             const identifier = isNaN(projectInput) ? projectInput : parseInt(projectInput);
             const project = await tasks.getProject(identifier);
-            if (!project) return interaction.reply({ content: `❌ No project found matching \`${projectInput}\`.`, ephemeral: true });
+            if (!project) return interaction.reply({ content: `❌ No project found matching \`${projectInput}\`.`, flags: 64 });
 
             const taskList = await tasks.getTasksByProject(project.id);
-            if (!taskList.length) return interaction.reply({ content: `📂 **${project.name}** has no tasks yet. Use \`/task-add\` to add one.`, ephemeral: true });
+            if (!taskList.length) return interaction.reply({ content: `📂 **${project.name}** has no tasks yet. Use \`/task-add\` to add one.`, flags: 64 });
 
             const embed = new EmbedBuilder()
                 .setColor(0x5865F2)
@@ -35,7 +35,7 @@ module.exports = {
         }
 
         const allProjects = await tasks.getAllProjects();
-        if (!allProjects.length) return interaction.reply({ content: `📭 No projects yet. Use \`/project-add\` to create one.`, ephemeral: true });
+        if (!allProjects.length) return interaction.reply({ content: `📭 No projects yet. Use \`/project-add\` to create one.`, flags: 64 });
 
         const allTasks = await tasks.getAllTasks();
 

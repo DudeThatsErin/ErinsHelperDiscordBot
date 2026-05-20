@@ -16,10 +16,10 @@ module.exports = {
         const subtaskId = interaction.options.getInteger('subtask');
 
         const subtask = await require('../../database.js').get('SELECT * FROM subtasks WHERE id = ?', [subtaskId]);
-        if (!subtask) return interaction.reply({ content: `❌ No subtask found with ID \`#${subtaskId}\`.`, ephemeral: true });
+        if (!subtask) return interaction.reply({ content: `❌ No subtask found with ID \`#${subtaskId}\`.`, flags: 64 });
 
         const result = await tasks.toggleSubtask(subtaskId);
-        if (!result.success) return interaction.reply({ content: `❌ Failed to toggle subtask: ${result.error}`, ephemeral: true });
+        if (!result.success) return interaction.reply({ content: `❌ Failed to toggle subtask: ${result.error}`, flags: 64 });
 
         const newState = subtask.done === 0 ? '✅ Done' : '⬜ Not done';
         return interaction.reply({ content: `🔄 Subtask \`#${subtaskId}\` — **${subtask.title}** — marked as **${newState}**.` });

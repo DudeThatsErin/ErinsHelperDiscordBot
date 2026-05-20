@@ -1,136 +1,110 @@
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 const path = require('path');
 
 // Use separate database for Discord bot
 const dbPath = process.env.DB_PATH || path.join(__dirname, 'bot.db');
 
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Error opening database:', err.message);
-    } else {
-        console.log('Connected to the SQLite database at:', dbPath);
-        db.run('PRAGMA foreign_keys = ON');
-        // Initialize reaction roles table
-        db.run(`
-            CREATE TABLE IF NOT EXISTS reaction_roles (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                guild_id TEXT NOT NULL,
-                channel_id TEXT NOT NULL,
-                message_id TEXT NOT NULL,
-                emoji TEXT NOT NULL,
-                role_id TEXT NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(message_id, emoji)
-            )
-        `, (err) => {
-            if (err) {
-                console.error('Error creating reaction_roles table:', err.message);
-            } else {
-                console.log('Reaction roles table ready');
-            }
-        });
+const db = new Database(dbPath);
+console.log('Connected to the SQLite database at:', dbPath);
 
-        // Initialize projects table
-        db.run(`
-            CREATE TABLE IF NOT EXISTS projects (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating projects table:', err.message);
-            else console.log('Projects table ready');
-        });
+db.pragma('foreign_keys = ON');
 
-        // Initialize tasks table
-        db.run(`
-            CREATE TABLE IF NOT EXISTS tasks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                project_id INTEGER NOT NULL,
-                title TEXT NOT NULL,
-                description TEXT,
-                status TEXT DEFAULT 'todo',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-            )
-        `, (err) => {
-            if (err) console.error('Error creating tasks table:', err.message);
-            else console.log('Tasks table ready');
-        });
+db.exec(`
+    CREATE TABLE IF NOT EXISTS reaction_roles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        message_id TEXT NOT NULL,
+        emoji TEXT NOT NULL,
+        role_id TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(message_id, emoji)
+    )
+`);
+console.log('Reaction roles table ready');
 
-        // Initialize subtasks table
-        db.run(`
-            CREATE TABLE IF NOT EXISTS subtasks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                task_id INTEGER NOT NULL,
-                title TEXT NOT NULL,
-                done INTEGER DEFAULT 0,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
-            )
-        `, (err) => {
-            if (err) console.error('Error creating subtasks table:', err.message);
-            else console.log('Subtasks table ready');
-        });
+db.exec(`
+    CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+console.log('Projects table ready');
 
-        // Initialize task_images table
-        db.run(`
-            CREATE TABLE IF NOT EXISTS task_images (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                task_id INTEGER NOT NULL,
-                url TEXT NOT NULL,
-                label TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
-            )
-        `, (err) => {
-            if (err) console.error('Error creating task_images table:', err.message);
-            else console.log('Task images table ready');
-        });
+db.exec(`
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        status TEXT DEFAULT 'todo',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )
+`);
+console.log('Tasks table ready');
 
-        // Initialize ms_tokens table for Microsoft OAuth
-        db.run(`
-            CREATE TABLE IF NOT EXISTS ms_tokens (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT NOT NULL UNIQUE,
-                access_token TEXT NOT NULL,
-                refresh_token TEXT NOT NULL,
-                expires_at INTEGER NOT NULL,
-                onenote_section_id TEXT,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating ms_tokens table:', err.message);
-            else console.log('MS tokens table ready');
-        });
-    }
-});
+db.exec(`
+    CREATE TABLE IF NOT EXISTS subtasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        done INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    )
+`);
+console.log('Subtasks table ready');
 
-// Promisify database methods for easier async/await usage
+db.exec(`
+    CREATE TABLE IF NOT EXISTS task_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL,
+        url TEXT NOT NULL,
+        label TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    )
+`);
+console.log('Task images table ready');
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS ms_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL UNIQUE,
+        access_token TEXT NOT NULL,
+        refresh_token TEXT NOT NULL,
+        expires_at INTEGER NOT NULL,
+        onenote_section_id TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+console.log('MS tokens table ready');
+
+// Sync wrappers matching the original async API shape
 const dbAsync = {
     get: (sql, params = []) => {
-        return new Promise((resolve, reject) => {
-            db.get(sql, params, (err, row) => {
-                if (err) reject(err);
-                else resolve(row);
-            });
-        });
+        try {
+            return Promise.resolve(db.prepare(sql).get(params));
+        } catch (err) {
+            return Promise.reject(err);
+        }
     },
     all: (sql, params = []) => {
-        return new Promise((resolve, reject) => {
-            db.all(sql, params, (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
+        try {
+            return Promise.resolve(db.prepare(sql).all(params));
+        } catch (err) {
+            return Promise.reject(err);
+        }
     },
     run: (sql, params = []) => {
-        return new Promise((resolve, reject) => {
-            db.run(sql, params, function(err) {
-                if (err) reject(err);
-                else resolve({ id: this.lastID, changes: this.changes });
-            });
-        });
+        try {
+            const result = db.prepare(sql).run(params);
+            return Promise.resolve({ id: result.lastInsertRowid, changes: result.changes });
+        } catch (err) {
+            return Promise.reject(err);
+        }
     }
 };
 

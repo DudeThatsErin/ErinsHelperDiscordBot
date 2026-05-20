@@ -16,10 +16,10 @@ module.exports = {
         const subtaskId = interaction.options.getInteger('subtask');
 
         const subtask = await require('../../database.js').get('SELECT * FROM subtasks WHERE id = ?', [subtaskId]);
-        if (!subtask) return interaction.reply({ content: `❌ No subtask found with ID \`#${subtaskId}\`.`, ephemeral: true });
+        if (!subtask) return interaction.reply({ content: `❌ No subtask found with ID \`#${subtaskId}\`.`, flags: 64 });
 
         const result = await tasks.deleteSubtask(subtaskId);
-        if (!result.success) return interaction.reply({ content: `❌ Failed to delete subtask: ${result.error}`, ephemeral: true });
+        if (!result.success) return interaction.reply({ content: `❌ Failed to delete subtask: ${result.error}`, flags: 64 });
 
         return interaction.reply({ content: `🗑️ Subtask \`#${subtaskId}\` — **${subtask.title}** — deleted.` });
     }
