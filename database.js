@@ -82,6 +82,15 @@ db.exec(`
 `);
 console.log('MS tokens table ready');
 
+db.exec(`
+    CREATE TABLE IF NOT EXISTS bot_state (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+console.log('Bot state table ready');
+
 // Sync wrappers matching the original async API shape
 const dbAsync = {
     get: (sql, params = []) => {
@@ -294,4 +303,22 @@ const tasks = {
     },
 };
 
-module.exports = { ...dbAsync, reactionRoles, tasks };
+// Simple synchronous key/value store for persisting small bits of bot state
+// (e.g. the TestFlight status message id) across restarts.
+const state = {
+    get: (key) => {
+        const row = db.prepare('SELECT value FROM bot_state WHERE key = ?').get(key);
+        return row ? row.value : null;
+    },
+    set: (key, value) => {
+        db.prepare(`
+            INSERT INTO bot_state (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+        `).run(key, value);
+    },
+    delete: (key) => {
+        db.prepare('DELETE FROM bot_state WHERE key = ?').run(key);
+    }
+};
+
+module.exports = { ...dbAsync, reactionRoles, tasks, state };

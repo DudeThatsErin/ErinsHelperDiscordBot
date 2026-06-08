@@ -4,8 +4,44 @@
 */
 require('dotenv').config();
 const fs = require('fs');
-const { Client, GatewayIntentBits, Partials, Collection, REST } = require('discord.js');
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.GuildMembers, GatewayIntentBits.DirectMessages ], partials: [Partials.Channel, Partials.Message, Partials.Reaction] });
+const { Client, GatewayIntentBits, Partials, Options, Collection, REST } = require('discord.js');
+
+const client = new Client({
+  // Only the intents the bot actually uses. GuildMembers (privileged) and
+  // GuildMessageReactions were enabled but never consumed by any handler.
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages,
+  ],
+  partials: [Partials.Channel],
+  // Cap and sweep caches so memory stays flat. The bot never relies on cached
+  // members, presences, reactions, voice states, threads, etc., and only needs
+  // recent messages for prefix/link handling.
+  makeCache: Options.cacheWithLimits({
+    ...Options.DefaultMakeCacheSettings,
+    MessageManager: 50,
+    GuildMemberManager: { maxSize: 25, keepOverLimit: member => member.id === member.client.user.id },
+    UserManager: { maxSize: 25, keepOverLimit: user => user.id === user.client.user.id },
+    PresenceManager: 0,
+    ReactionManager: 0,
+    ReactionUserManager: 0,
+    GuildInviteManager: 0,
+    GuildScheduledEventManager: 0,
+    GuildStickerManager: 0,
+    StageInstanceManager: 0,
+    ThreadManager: 0,
+    ThreadMemberManager: 0,
+    VoiceStateManager: 0,
+    AutoModerationRuleManager: 0,
+  }),
+  sweepers: {
+    ...Options.DefaultSweeperSettings,
+    // Evict cached messages older than 10 minutes, checked every 5 minutes.
+    messages: { interval: 300, lifetime: 600 },
+  },
+});
 
 // Create a shared REST instance for the entire bot
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);

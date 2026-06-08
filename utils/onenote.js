@@ -123,6 +123,55 @@ async function createPage(userId, title, htmlContent) {
     return res.data;
 }
 
+// Post a new page with an inline binary attachment via multipart.
+// Images are embedded with <img>, all other files with <object> (shown as attachment).
+async function createPageWithAttachment(userId, title, htmlContent, fileBuffer, mimeType, fileName = 'attachment') {
+    const token = await getAccessToken(userId);
+    const row = await db.get('SELECT onenote_section_id FROM ms_tokens WHERE user_id = ?', [userId]);
+    if (!row?.onenote_section_id) throw new Error('No OneNote section configured. Run `/onenote-setup` first.');
+
+    const isImage = /^image\//i.test(mimeType);
+    const partName = 'attachment';
+    const attachmentTag = isImage
+        ? `<p><img src="name:${partName}" alt="${escapeHtml(fileName)}" /></p>`
+        : `<p><object data-attachment="${escapeHtml(fileName)}" data="name:${partName}" type="${mimeType}" /></p>`;
+
+    const boundary = `----OneNoteBoundary${Date.now()}`;
+    const pageHtml = `<!DOCTYPE html>
+<html>
+  <head><title>${escapeHtml(title)}</title></head>
+  <body>${htmlContent}${attachmentTag}</body>
+</html>`;
+
+    const body = Buffer.concat([
+        Buffer.from(
+            `--${boundary}\r\n` +
+            `Content-Disposition: form-data; name="Presentation"\r\n` +
+            `Content-Type: text/html\r\n\r\n` +
+            pageHtml + `\r\n`,
+            'utf8'
+        ),
+        Buffer.from(
+            `--${boundary}\r\n` +
+            `Content-Disposition: form-data; name="${partName}"\r\n` +
+            `Content-Type: ${mimeType}\r\n\r\n`,
+            'utf8'
+        ),
+        fileBuffer,
+        Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8'),
+    ]);
+
+    const res = await axios.post(
+        `${GRAPH_BASE}/me/onenote/sections/${row.onenote_section_id}/pages`,
+        body,
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': `multipart/form-data; boundary=${boundary}` } }
+    );
+    return res.data;
+}
+
+// Keep old name as alias for backwards compatibility
+const createPageWithImage = createPageWithAttachment;
+
 function escapeHtml(str) {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -154,4 +203,4 @@ function buildHtmlContent(text, urls) {
     return html;
 }
 
-module.exports = { buildAuthUrl, exchangeCode, getAccessToken, saveSectionId, getNotebooks, getSections, createPage, buildHtmlContent, saveTokens };
+module.exports = { buildAuthUrl, exchangeCode, getAccessToken, saveSectionId, getNotebooks, getSections, createPage, createPageWithImage, createPageWithAttachment, buildHtmlContent, saveTokens };

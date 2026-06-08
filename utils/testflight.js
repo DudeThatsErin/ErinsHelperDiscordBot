@@ -1,5 +1,10 @@
 const https = require('https');
 const { EmbedBuilder } = require('discord.js');
+const { getPrograms } = require('./testflightStore');
+const { state: botState } = require('../database.js');
+
+const EMBED_TITLE = 'TestFlight Watcher';
+const STATE_KEY = 'testflight_status_message_id';
 
 const REQUEST_HEADERS = {
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
@@ -32,9 +37,14 @@ function isFull(html) {
 
 function buildEmbed(programs, lastChecked) {
     const embed = new EmbedBuilder()
-        .setTitle('TestFlight Watcher')
+        .setTitle(EMBED_TITLE)
         .setColor(0x1ea0e1)
         .setFooter({ text: `Last checked: ${lastChecked}` });
+
+    if (!programs.length) {
+        embed.setDescription('No programs are being tracked. Use `/testflight-add` to add one.');
+        return embed;
+    }
 
     const fields = programs.map(p => {
         const state = statusCache[p.id];
@@ -76,19 +86,47 @@ async function runChecks(programs, channel, pingUserId) {
 }
 
 function formatTimestamp() {
-    return new Date().toUTCString();
+    // Display in Erin's local Central time (auto-switches CST/CDT for DST).
+    return new Date().toLocaleString('en-US', {
+        timeZone: 'America/Chicago',
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        timeZoneName: 'short'
+    });
+}
+
+// Delete every existing TestFlight Watcher message the bot has posted in the
+// channel. This guarantees we never accumulate duplicates, even for orphans
+// that were posted before message-id persistence existed.
+async function clearOldStatusMessages(channel, exceptId = null) {
+    try {
+        const recent = await channel.messages.fetch({ limit: 50 });
+        const mine = recent.filter(m =>
+            m.author.id === channel.client.user.id &&
+            m.id !== exceptId &&
+            m.embeds.some(e => e.title === EMBED_TITLE)
+        );
+        for (const message of mine.values()) {
+            await message.delete().catch(err =>
+                console.warn(`[TestFlight] Could not delete old status message ${message.id}: ${err.message}`)
+            );
+        }
+        if (mine.size) console.log(`[TestFlight] Cleared ${mine.size} old status message(s).`);
+    } catch (err) {
+        console.warn(`[TestFlight] Failed to scan channel for old status messages: ${err.message}`);
+    }
 }
 
 async function startTestFlightWatcher(client) {
     const jsonConfig = require('../config/settings.json');
-    const programs = jsonConfig.testflight?.programs;
     const channelId = jsonConfig.channels?.testflight;
     const pingUserId = jsonConfig.testflight?.pingUserId;
-
-    if (!programs || programs.length === 0) {
-        console.log('[TestFlight] No programs configured, watcher not started.');
-        return;
-    }
 
     if (!channelId) {
         console.log('[TestFlight] No channel configured, watcher not started.');
@@ -102,20 +140,43 @@ async function startTestFlightWatcher(client) {
 
     if (!channel) return;
 
-    console.log(`[TestFlight] Watching ${programs.length} program(s) every ${INTERVAL_MS / 1000}s in channel ${channelId}.`);
+    console.log(`[TestFlight] Watching every ${INTERVAL_MS / 1000}s in channel ${channelId}. Program list is read live each cycle.`);
 
     const run = async () => {
+        // Read the program list fresh every cycle so /testflight-add and
+        // /testflight-remove take effect without restarting the bot.
+        const programs = getPrograms();
+
+        // Drop cached state for programs that are no longer tracked.
+        const activeIds = new Set(programs.map(p => p.id));
+        for (const id of Object.keys(statusCache)) {
+            if (!activeIds.has(id)) delete statusCache[id];
+        }
+
         await runChecks(programs, channel, pingUserId);
         const embed = buildEmbed(programs, formatTimestamp());
 
-        try {
-            if (!statusMessage) {
-                statusMessage = await channel.send({ embeds: [embed] });
-            } else {
+        // Edit the message we already created this session.
+        if (statusMessage) {
+            try {
                 await statusMessage.edit({ embeds: [embed] });
+                return;
+            } catch (err) {
+                console.warn(`[TestFlight] Failed to edit status message, creating a fresh one: ${err.message}`);
+                statusMessage = null;
             }
+        }
+
+        // Creating a new message (e.g. first run after a restart): wipe out
+        // every previous TestFlight Watcher message in the channel first so we
+        // never leave orphans behind, then post a fresh one and remember its id.
+        await clearOldStatusMessages(channel);
+
+        try {
+            statusMessage = await channel.send({ embeds: [embed] });
+            botState.set(STATE_KEY, statusMessage.id);
         } catch (err) {
-            console.warn(`[TestFlight] Failed to send/edit status message: ${err.message}`);
+            console.warn(`[TestFlight] Failed to send status message: ${err.message}`);
             statusMessage = null;
         }
     };
