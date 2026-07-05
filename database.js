@@ -83,6 +83,19 @@ db.exec(`
 console.log('MS tokens table ready');
 
 db.exec(`
+    CREATE TABLE IF NOT EXISTS onenote_page_cache (
+        user_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        page_id TEXT NOT NULL,
+        web_href TEXT,
+        client_href TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, title)
+    )
+`);
+console.log('OneNote page cache table ready');
+
+db.exec(`
     CREATE TABLE IF NOT EXISTS bot_state (
         key TEXT PRIMARY KEY,
         value TEXT,
@@ -90,6 +103,26 @@ db.exec(`
     )
 `);
 console.log('Bot state table ready');
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS onenote_backup (
+        page_id TEXT PRIMARY KEY,
+        title TEXT,
+        notebook TEXT,
+        section_id TEXT,
+        section TEXT,
+        vault_path TEXT,
+        last_modified TEXT,
+        synced_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        content_hash TEXT
+    )
+`);
+try {
+    db.prepare('ALTER TABLE onenote_backup ADD COLUMN content_hash TEXT').run();
+} catch (err) {
+    // Column already exists or table already has the schema.
+}
+console.log('OneNote backup table ready');
 
 // Sync wrappers matching the original async API shape
 const dbAsync = {

@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
 const o = require('../config/owner.json');
+const { log } = require('../utils/logger');
 
 module.exports = {
     name: 'interactionCreate',
@@ -11,14 +12,17 @@ module.exports = {
             const commandName = interaction.customId.split(':')[0];
             const command = client.slashCommands.get(commandName) || client.erinCommands.get(commandName);
             if (!command || typeof command.handleModal !== 'function') {
+                log('interactionCreate', `Modal submit for non-existent command: ${commandName}`);
                 return interaction.reply({ content: 'This form no longer exists.', flags: 64 });
             }
             if (command.ownerOnly === 1 && interaction.user.id != o.id && interaction.user.id != o.altID) {
+                log('interactionCreate', `Non-owner attempted to use owner-only command: ${commandName}`);
                 return interaction.reply({ content: `This is only a command Erin can use.`, flags: 64 });
             }
             try {
                 return await command.handleModal(interaction);
             } catch (error) {
+                log('interactionCreate', `Error occurred while handling modal submit for command: ${commandName}`);
                 console.error('Modal handler error:', error);
                 if (!interaction.replied && !interaction.deferred) {
                     return interaction.reply({ content: '❌ Something went wrong handling that form.', flags: 64 });
@@ -27,11 +31,15 @@ module.exports = {
         }
 
         const command = client.slashCommands.get(interaction.commandName) || client.erinCommands.get(interaction.commandName);
-        if (!command) return interaction.reply({ content: 'This command no longer exists.', flags: 64 });
+        if (!command) {
+            log('interactionCreate', `Interaction created for non-existent command: ${interaction.commandName}`);
+            return interaction.reply({ content: 'This command no longer exists.', flags: 64 });
+        }
 
         // owner only
         if (command.ownerOnly === 1) {
             if (interaction.user.id != o.id && interaction.user.id != o.altID) {
+                log('interactionCreate', `Non-owner attempted to use owner-only command: ${command.name}`);
                 return interaction.reply({ content: `This is only a command Erin can use. If you are seeing this in error use the \`/report\` command.`, flags: 64 });
             }
         }
@@ -46,6 +54,7 @@ module.exports = {
                 }
 
                 if (value == modRoles.length) {
+                    log('interactionCreate', `Non-moderator attempted to use mod-only command: ${command.name}`);
                     return interaction.reply({ content: `This is a command only moderators can use. You do not have the required permissions. Moderators have the \`@Moderator\` role or \`@&Junior Mod\` roles. Please run \`/report [issue]\` if you are seeing this in error.`, flags: 64 });
                 }
             }
@@ -55,6 +64,7 @@ module.exports = {
         const botspam = `433962402292432896`;
         if (command.botSpamOnly === 1 && interaction.guild) {
             if (interaction.channel.id != botspam) {
+                log('interactionCreate', `Command used in wrong channel: ${command.name}`);
                 return interaction.reply({ content: `Please only use this command in the <#${botspam}> channel. This command cannot be used elsewhere. Thank you.`, flags: 64 })
             }
         }
@@ -72,6 +82,7 @@ module.exports = {
 
             if (now < expirationTime) {
                 const timeLeft = (expirationTime - now) / 1000;
+                log('interactionCreate', `User ${interaction.user.id} is on cooldown for command: ${command.name}`);
                 return interaction.reply({ content: `Please wait ${timeLeft.toFixed(1)} more second(s) before reusing the \`${command.name}\` command.`, flags: 64 });
             }
         }
@@ -118,8 +129,10 @@ module.exports = {
                         .setFooter({ text: `Thanks for using ${client.user.tag}! I'm sorry you encountered this error!`, icon_url: `${client.user.displayAvatarURL()}` });
                     
                     await interaction.reply({ content: `Hey, <@${o.id}>! You have an error!`, embeds: [embed] });
+                    log('interactionCreate', `Error occurred while executing command: ${command.name}. Error: ${errorName} - ${errorMessage}`);
                 } catch (replyError) {
                     console.error('Failed to send error message to user:', replyError);
+                    log('interactionCreate', `Failed to send error message to user for command: ${command.name}`);
                 }
             }
         }

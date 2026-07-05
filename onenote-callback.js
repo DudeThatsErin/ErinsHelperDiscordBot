@@ -9,38 +9,38 @@
 require('dotenv').config();
 const http = require('http');
 const { URL } = require('url');
-const { REST, Routes } = require('discord.js');
-const { exchangeCode, createPage, createPageWithAttachment, buildHtmlContent } = require('./utils/onenote.js');
+const { log } = require('./utils/logger.js');
+const { exchangeCode, createPage, createPageWithAttachment, buildHtmlContent, toAppDeepLink, checkOneNoteHealth } = require('./utils/onenote.js');
+const { appendNoteByTitle } = require('./utils/onenotePost.js');
+const { postToChannel, dmUser } = require('./utils/notify.js');
 const { id: ownerId } = require('./config/owner.json');
 const PORT = process.env.MS_CALLBACK_PORT || 3636;
 
 const WEBHOOK_SECRET  = process.env.WEBHOOK_SECRET;
-const ONENOTE_LOG_CHANNEL = '1406112392651210802';
-
-const discordRest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+const ONENOTE_LOG_CHANNEL = process.env.ONENOTE_LOG_CHANNEL || '1406112392651210802';
 
 async function postNoteToDiscord(title, appUrl, webUrl) {
     try {
         const lines = [title];
-        if (appUrl) lines.push('', appUrl);
         if (webUrl) lines.push('', webUrl);
-        await discordRest.post(Routes.channelMessages(ONENOTE_LOG_CHANNEL), {
-            body: { content: lines.join('\n') }
-        });
+        await postToChannel(ONENOTE_LOG_CHANNEL, lines.join('\n'));
+
+        // Post the app deep link as its own message (raw, no formatting) so it
+        // can be selected and copied cleanly on mobile.
+        if (appUrl) await postToChannel(ONENOTE_LOG_CHANNEL, appUrl);
     } catch (err) {
-        console.error('Failed to post note to Discord:', err.message);
+        log('onenote', `Failed to post note to Discord: ${err.message}`);
     }
 }
 
+// Log errors to the channel AND DM the owner so failures aren't missed.
 async function postErrorToDiscord(context, detail) {
-    try {
-        const summary = typeof detail === 'object' ? JSON.stringify(detail) : String(detail);
-        await discordRest.post(Routes.channelMessages(ONENOTE_LOG_CHANNEL), {
-            body: { content: `⚠️ OneNote webhook error (${context})\n\`\`\`\n${summary.slice(0, 1800)}\n\`\`\`` }
-        });
-    } catch (err) {
-        console.error('Failed to post error to Discord:', err.message);
-    }
+    const summary = typeof detail === 'object' ? JSON.stringify(detail) : String(detail);
+    const message = `⚠️ OneNote webhook error (${context})\n\`\`\`\n${summary.slice(0, 1500)}\n\`\`\``;
+    try { await postToChannel(ONENOTE_LOG_CHANNEL, message); }
+    catch (err) { log('onenote', `Failed to post error to Discord channel: ${err.message}`); }
+    try { await dmUser(ownerId, message); }
+    catch (err) { log('onenote', `Failed to DM error to owner: ${err.message}`); }
 }
 
 function readBody(req) {
@@ -57,6 +57,39 @@ function readBody(req) {
 
 const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://localhost:${PORT}`);
+
+    // ── GET /health ─────────────────────────────────────────────────────────
+    // Read-only probe used by the watchdog. Verifies the same dependency chain a
+    // /onenote/post relies on (owner token + configured section + reachable
+    // Graph API) WITHOUT creating a page.
+    //   200 { status: 'healthy' }   = all good
+    //   200 { status: 'throttled' } = Graph is rate-limiting us (e.g. during a
+    //                                 backup) — degraded but expected, NOT a
+    //                                 hard failure, so the dashboard stays green.
+    //   503                          = a real failure (auth, config, unreachable).
+    if (req.method === 'GET' && (url.pathname === '/health' || url.pathname === '/onenote/health')) {
+        if (!WEBHOOK_SECRET || !ownerId) {
+            res.writeHead(503, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ ok: false, error: 'Webhook not configured (missing WEBHOOK_SECRET or ownerId)' }));
+        }
+        try {
+            const result = await checkOneNoteHealth(ownerId);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({
+                ok: true,
+                status: result.throttled ? 'throttled' : 'healthy',
+                degraded: !!result.throttled,
+                ...(result.throttled ? { note: 'Graph rate-limited (20166) — transient, likely a backup running', retryAfter: result.retryAfter } : {}),
+                sectionId: result.sectionId,
+                ts: Date.now(),
+            }));
+        } catch (err) {
+            log('onenote', `Health check failed: ${err.message}`);
+            const detail = err.response?.data ?? err.message;
+            res.writeHead(503, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ ok: false, error: typeof detail === 'object' ? JSON.stringify(detail) : String(detail) }));
+        }
+    }
 
     // ── POST /onenote/post ──────────────────────────────────────────────────
     if (req.method === 'POST' && url.pathname === '/onenote/post') {
@@ -105,17 +138,77 @@ const server = http.createServer(async (req, res) => {
                 page = await createPage(ownerId, title, resolvedHtml);
             }
             const webUrl = page.links?.oneNoteWebUrl?.href ?? null;
-            const appUrl = page.links?.oneNoteClientUrl?.href ?? null;
+            const appUrl = toAppDeepLink(page.links?.oneNoteClientUrl?.href) ?? null;
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true, title, webUrl, appUrl }));
             postNoteToDiscord(title, appUrl, webUrl);
             return;
         } catch (err) {
             const detail = err.response?.data ?? err.message;
-            console.error('Webhook post error:', detail);
+            log('onenote', `Webhook post error: ${detail}`);
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: detail }));
             postErrorToDiscord(`API error${title ? ` — "${title}"` : ''}`, detail);
+            return;
+        }
+    }
+
+    // ── POST /onenote/append ────────────────────────────────────────────────
+    // Append-only: adds text/HTML to the END of an existing page matched by its
+    // exact title. Creates the page if it doesn't exist yet. Same auth as /post.
+    if (req.method === 'POST' && url.pathname === '/onenote/append') {
+        if (!WEBHOOK_SECRET || !ownerId) {
+            res.writeHead(503, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ error: 'Webhook not configured (missing WEBHOOK_SECRET or ownerId)' }));
+        }
+
+        const authHeader = (req.headers['x-webhook-secret'] || req.headers['authorization']?.replace(/^Bearer /, '') || url.searchParams.get('secret') || '').trim();
+        if (authHeader !== WEBHOOK_SECRET) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ error: 'Unauthorized' }));
+        }
+
+        let body;
+        try { body = await readBody(req); }
+        catch (err) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+            postErrorToDiscord('append: invalid JSON', err.message);
+            return;
+        }
+
+        const { title, content = null, html = null, items = null } = body;
+        if (!title) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'title is required' }));
+            postErrorToDiscord('append: missing title', 'Request body had no title field');
+            return;
+        }
+        if (content == null && html == null && !(Array.isArray(items) && items.length)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'content, items, or html is required' }));
+            return;
+        }
+
+        try {
+            // If raw HTML is supplied, strip any wrapping <html>/<body> tags.
+            let appendHtml = html;
+            if (appendHtml) {
+                const bodyMatch = appendHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                appendHtml = bodyMatch ? bodyMatch[1] : appendHtml.replace(/<\/?(html|head|body)[^>]*>/gi, '');
+            }
+
+            const result = await appendNoteByTitle(ownerId, title, content, { html: appendHtml, items });
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: true, ...result }));
+            postNoteToDiscord(`${result.created ? '🆕 Created' : '➕ Appended to'}: ${result.title}`, result.appUrl, result.webUrl);
+            return;
+        } catch (err) {
+            const detail = err.response?.data ?? err.message;
+            log('onenote', `Webhook append error: ${detail}`);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: detail }));
+            postErrorToDiscord(`append API error${title ? ` — "${title}"` : ''}`, detail);
             return;
         }
     }
@@ -146,7 +239,7 @@ const server = http.createServer(async (req, res) => {
         console.log(`✅ OAuth tokens saved for Discord user ${userId}`);
     } catch (err) {
         const detail = err.response?.data ? JSON.stringify(err.response.data) : err.message;
-        console.error('OAuth exchange error:', detail);
+        log('onenote', `OAuth exchange error: ${detail}`);
         res.writeHead(500, { 'Content-Type': 'text/html' });
         res.end(`<h2>❌ Token exchange failed</h2><p>${detail}</p>`);
     }
@@ -155,4 +248,5 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
     console.log(`🔑 OneNote OAuth callback server listening on http://localhost:${PORT}/auth/callback`);
     console.log(`📨 OneNote webhook endpoint: POST http://localhost:${PORT}/onenote/post`);
+    console.log(`❤️  Health probe: GET http://localhost:${PORT}/health`);
 });

@@ -1,5 +1,8 @@
 
 const { prefix } = require('../config/config.json');
+const o = require('../config/owner.json');
+const { postNoteFromMessage } = require('../utils/onenotePost.js');
+const { log } = require('../utils/logger');
 
 module.exports = {
     name: 'messageCreate',
@@ -19,11 +22,27 @@ module.exports = {
                 try {
                     await command.execute(message, args, client);
                 } catch (error) {
+                    log('messageCreate', `Error executing prefix command ${commandName}: ${error.message}`);
                     console.error(`Error executing prefix command ${commandName}:`, error);
                     message.reply({ content: '❌ There was an error executing that command.' }).catch(() => {});
                 }
                 return;
             }
+        }
+
+        // DM the bot to post straight to OneNote (owner only). The first line is
+        // the title, the rest is the body. Attachments are included too.
+        if (!message.guild && (message.author.id === o.id || message.author.id === o.altID)) {
+            if (message.content.trim() || message.attachments.size > 0) {
+                try {
+                    await postNoteFromMessage(message, message.content);
+                } catch (error) {
+                    log('messageCreate', `Error posting OneNote note from DM: ${error.message}`);
+                    console.error('Error posting OneNote note from DM:', error);
+                    message.reply({ content: '❌ There was an error posting that note.' }).catch(() => {});
+                }
+            }
+            return;
         }
 
         // Check for OneNote/OneDrive links
@@ -43,6 +62,7 @@ module.exports = {
             if (webLink) parts.push(`Web Link: | [Test Link](<${webLink}>)\n\`\`\`\n${webLink}\n\`\`\``);
             if (inAppLink) parts.push(`OneNote (Opens in the app): \n\`\`\`\n${inAppLink}\n\`\`\`\nThis cannot be tested through Discord.`);
 
+            log('messageCreate', `Posting OneNote links from message: ${message.id}`);
             await message.reply({ content: parts.join('\n\n') });
         }
     }

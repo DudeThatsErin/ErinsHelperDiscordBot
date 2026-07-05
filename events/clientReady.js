@@ -1,5 +1,6 @@
 
 const { ActivityType } = require('discord.js');
+const { log } = require('../utils/logger');
 
 module.exports = {
     name: 'clientReady',
@@ -9,6 +10,8 @@ module.exports = {
         console.log('          Logging In...             ')
         console.log('|-----------------------------------|')
         console.log(`   ${client.user.tag} is\n   logged in and ready!`);
+
+        log('clientReady', `${client.user.tag} is logged in and ready!`);
 
 
         // Array of random custom statuses with emojis

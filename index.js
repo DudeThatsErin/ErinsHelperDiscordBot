@@ -5,7 +5,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const { Client, GatewayIntentBits, Partials, Options, Collection, REST } = require('discord.js');
-
+const { log } = require('./utils/logger');
 const client = new Client({
   // Only the intents the bot actually uses. GuildMembers (privileged) and
   // GuildMessageReactions were enabled but never consumed by any handler.
@@ -48,7 +48,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
 // Set up rate limit event listener on the shared REST instance
 rest.on('rateLimited', (info) => {
-  console.log(`🚫 Rate limited! Timeout: ${info.timeout}ms, Limit: ${info.limit}, Method: ${info.method}, Path: ${info.route}`);
+  log('rest', `🚫 Rate limited! Timeout: ${info.timeout}ms, Limit: ${info.limit}, Method: ${info.method}, Path: ${info.route}`);
 });
 
 // Attach the shared REST instance to the client immediately
@@ -103,6 +103,7 @@ commandFilePaths.forEach((filePath) => {
     client.commands.set(command.name, command);
     console.log(command.name + ' loaded successfully!');
   } catch (error) {
+    log('command', `Error loading command ${filePath}: ${error.message}`);
     console.error(`Error loading command ${filePath}:`, error.message);
   }
 });
@@ -123,6 +124,7 @@ slashCommandFilePaths.forEach((filePath) => {
     client.slashCommands.set(cmd.name, cmd);
     console.log(cmd.name + ' loaded successfully!');
   } catch (error) {
+    log('slashcommand', `Error loading slash command ${filePath}: ${error.message}`);
     console.error(`Error loading slash command ${filePath}:`, error.message);
   }
 });
@@ -141,8 +143,14 @@ for (const file of eventFiles) {
 
 // TestFlight watcher
 const { startTestFlightWatcher } = require('./utils/testflight');
+// Scheduled daily OneNote "morning brief"
+const { startDailyNote } = require('./utils/dailyNote');
+// Generic config-driven URL/RSS/API watcher engine
+const { startWatchers } = require('./utils/watcher');
 client.once('clientReady', () => {
   startTestFlightWatcher(client);
+  startDailyNote(client);
+  startWatchers(client);
 });
 
 // Start the bot (commands are deployed via createcommands prefix command)

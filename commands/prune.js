@@ -1,5 +1,6 @@
 const { PermissionsBitField } = require('discord.js');
 const o = require('../config/owner.json');
+const { log } = require('../utils/logger');
 
 module.exports = {
     name: 'prune',
@@ -23,6 +24,7 @@ module.exports = {
             setTimeout(() => reply.delete().catch(() => {}), 5000);
         } catch (error) {
             console.error('Prune command error:', error);
+            log('prune', `Error occurred while executing prune command: ${error.message}`);
             message.channel.send('❌ Failed to delete messages. Messages older than 14 days cannot be bulk deleted.');
         }
     }

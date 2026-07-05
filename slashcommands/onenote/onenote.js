@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, LabelBuilder } = require('discord.js');
-const { createPage, buildHtmlContent } = require('../../utils/onenote.js');
+const { createNote, buildStatus, handleNoteError } = require('../../utils/onenotePost.js');
 
 module.exports = {
     name: 'onenote',
@@ -70,22 +70,17 @@ module.exports = {
         if (attachmentUrl) urls.push(attachmentUrl);
 
         try {
-            const html = buildHtmlContent(content, urls);
-            const page = await createPage(interaction.user.id, title, html);
-            const webUrl = page.links?.oneNoteWebUrl?.href;
-            const appUrl = page.links?.oneNoteClientUrl?.href;
-            const lines = [`✅ Note **"${title}"** sent to OneNote!`];
-            if (appUrl) lines.push(`� [Open in OneNote app](${appUrl})`);
-            if (webUrl) lines.push(`🌐 [Open in browser](${webUrl})`);
-            return interaction.editReply({ content: lines.join('\n') });
-        } catch (err) {
-            console.error('onenote handleModal error:', err.response?.data || err.message);
-            if (err.response?.data?.error?.code === '20102') {
-                const { saveSectionId } = require('../../utils/onenote.js');
-                await saveSectionId(interaction.user.id, null);
-                return interaction.editReply({ content: `❌ Your configured OneNote section no longer exists. Please run \`/onenote-setup\` to pick a new section.` });
+            const { webUrl, appUrl } = await createNote(interaction.user.id, { title, content, urls });
+            await interaction.editReply({ content: buildStatus(title, webUrl) });
+
+            // Send the app deep link as its own message (raw, no formatting) so
+            // it can be selected and copied cleanly on mobile.
+            if (appUrl) {
+                await interaction.followUp({ content: appUrl, flags: 64 });
             }
-            return interaction.editReply({ content: `❌ ${err.message}` });
+            return;
+        } catch (err) {
+            return interaction.editReply({ content: await handleNoteError(err, interaction.user.id) });
         }
     }
 };
