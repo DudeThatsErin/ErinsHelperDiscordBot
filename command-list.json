@@ -123,6 +123,13 @@
         "example": "/onenote-auth"
       },
       {
+        "name": "onenote-backup",
+        "description": "Allows **Erin** to back up all OneNote pages to the Obsidian OneNoteBackup vault.",
+        "aliases": [],
+        "usage": "/onenote-backup [force]",
+        "example": "/onenote-backup"
+      },
+      {
         "name": "onenote-setup",
         "description": "Allows **Erin** to choose which OneNote notebook and section new notes are sent to.",
         "aliases": [],
@@ -151,6 +158,45 @@
         "aliases": [],
         "usage": "/testflight-list",
         "example": "/testflight-list"
+      }
+    ],
+    "Watch Commands": [
+      {
+        "name": "watch-add",
+        "description": "Allows **Erin** to add a URL/RSS/API watcher that pings her when something changes.",
+        "aliases": [],
+        "usage": "/watch-add <name> <type> <url> [options]",
+        "example": "/watch-add GitHub Releases rss https://github.com/owner/repo/releases.atom"
+      },
+      {
+        "name": "watch-check",
+        "description": "Allows **Erin** to run a watcher right now and report the result.",
+        "aliases": [],
+        "usage": "/watch-check <watcher>",
+        "example": "/watch-check GitHub Releases"
+      },
+      {
+        "name": "watch-list",
+        "description": "Allows **Erin** to list all configured watchers and their current status.",
+        "aliases": [],
+        "usage": "/watch-list",
+        "example": "/watch-list"
+      },
+      {
+        "name": "watch-remove",
+        "description": "Allows **Erin** to remove a watcher by its id or name.",
+        "aliases": [],
+        "usage": "/watch-remove <watcher>",
+        "example": "/watch-remove GitHub Releases"
+      }
+    ],
+    "Utility Commands": [
+      {
+        "name": "status-export",
+        "description": "Allows **Erin** to refresh the Obsidian status dashboard note from the live dashboard data.",
+        "aliases": [],
+        "usage": "/status-export",
+        "example": "/status-export"
       }
     ]
   }
